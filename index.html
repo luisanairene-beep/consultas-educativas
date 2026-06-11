@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="StudyAI">
+    <title>Asistente de Estudio Inteligente</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2997/2997235.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b border-gray-100">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    <span class="font-bold text-xl text-gray-900">StudyAI</span>
+                </div>
+                <div id="nav-auth" class="hidden flex items-center gap-4">
+                    <span id="user-greeting" class="text-sm text-gray-600 hidden sm:block"></span>
+                    <button onclick="logout()" class="text-sm font-medium text-red-600 hover:text-red-700 transition">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <!-- Auth View -->
+        <div id="auth-view" class="max-w-md mx-auto fade-in">
+            <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+                <h2 id="auth-title" class="text-2xl font-bold text-center text-gray-900 mb-6">Iniciar Sesión</h2>
+                
+                <form id="auth-form" class="space-y-4">
+                    <div id="username-group" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de usuario</label>
+                        <input type="text" id="username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="tu_usuario">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                        <input type="email" id="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="tu@correo.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                        <input type="password" id="password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="••••••••">
+                    </div>
+                    <button type="submit" id="auth-submit" class="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition flex justify-center items-center gap-2">
+                        <span>Ingresar</span>
+                    </button>
+                </form>
+
+                <p class="mt-6 text-center text-sm text-gray-600">
+                    <span id="auth-toggle-text">¿No tienes una cuenta?</span>
+                    <button onclick="toggleAuthMode()" class="text-blue-600 font-semibold hover:underline ml-1">Regístrate aquí</button>
+                </p>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="hidden fade-in space-y-6">
+            <!-- Ask Question Section -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Haz tu pregunta
+                </h3>
+                <form id="question-form" class="space-y-4">
+                    <textarea id="question-input" required rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none" placeholder="Ej: ¿Podrías explicarme la segunda ley de Newton de forma sencilla?"></textarea>
+                    <div class="flex justify-end">
+                        <button type="submit" id="ask-btn" class="bg-blue-600 text-white font-medium px-6 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span id="btn-text">Obtener Respuesta IA</span>
+                            <div id="btn-loader" class="loader hidden"></div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- History Section -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Historial de Estudio
+                </h3>
+                <div id="history-list" class="space-y-4">
+                    <!-- Items will be injected here -->
+                    <div class="text-center text-gray-500 py-8 bg-white rounded-xl border border-dashed border-gray-200">No hay preguntas registradas aún. ¡Haz tu primera pregunta arriba!</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3">
+        <span id="toast-message"></span>
+    </div>
+
+    <script>
+        // State
+        let isLoginMode = true;
+        let token = localStorage.getItem('token');
+        let username = localStorage.getItem('username');
+
+        // DOM Elements
+        const authView = document.getElementById('auth-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const navAuth = document.getElementById('nav-auth');
+        const userGreeting = document.getElementById('user-greeting');
+        const authForm = document.getElementById('auth-form');
+        const authTitle = document.getElementById('auth-title');
+        const authSubmit = document.getElementById('auth-submit');
+        const authToggleText = document.getElementById('auth-toggle-text');
+        const usernameGroup = document.getElementById('username-group');
+        const questionForm = document.getElementById('question-form');
+        const historyList = document.getElementById('history-list');
+
+        // Init
+        if (token && username) {
+            showDashboard();
+        } else {
+            showAuth();
+        }
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta';
+            authSubmit.querySelector('span').textContent = isLoginMode ? 'Ingresar' : 'Registrarse';
+            authToggleText.textContent = isLoginMode ? '¿No tienes una cuenta?' : '¿Ya tienes una cuenta?';
+            document.querySelector('button[onclick="toggleAuthMode()"]').textContent = isLoginMode ? 'Regístrate aquí' : 'Inicia sesión aquí';
+            usernameGroup.classList.toggle('hidden', isLoginMode);
+            document.getElementById('username').required = !isLoginMode;
+        }
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const usernameVal = document.getElementById('username').value;
+
+            const endpoint = isLoginMode ? '/api/login' : '/api/register';
+            const payload = isLoginMode ? { email, password } : { username: usernameVal, email, password };
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || 'Error en la solicitud');
+
+                if (isLoginMode) {
+                    token = data.token;
+                    username = data.username;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('username', username);
+                    showToast('¡Bienvenido de nuevo!');
+                    showDashboard();
+                } else {
+                    showToast('Cuenta creada exitosamente. Ahora inicia sesión.');
+                    toggleAuthMode();
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
+        function showDashboard() {
+            authView.classList.add('hidden');
+            dashboardView.classList.remove('hidden');
+            navAuth.classList.remove('hidden');
+            userGreeting.textContent = `Hola, ${username}`;
+            loadHistory();
+        }
+
+        function showAuth() {
+            authView.classList.remove('hidden');
+            dashboardView.classList.add('hidden');
+            navAuth.classList.add('hidden');
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            token = null;
+            username = null;
+            showAuth();
+            showToast('Sesión cerrada');
+        }
+
+        questionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const question = document.getElementById('question-input').value;
+            const btn = document.getElementById('ask-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnLoader = document.getElementById('btn-loader');
+
+            btn.disabled = true;
+            btnText.textContent = 'Generando respuesta...';
+            btnLoader.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/questions', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ question })
+                });
+                
+                if (!res.ok) throw new Error('Error al obtener respuesta');
+                
+                const data = await res.json();
+                document.getElementById('question-input').value = '';
+                showToast('Respuesta generada con éxito');
+                loadHistory();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Obtener Respuesta IA';
+                btnLoader.classList.add('hidden');
+            }
+        });
+
+        async function loadHistory() {
+            try {
+                const res = await fetch('/api/questions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Error al cargar historial');
+                
+                const questions = await res.json();
+                historyList.innerHTML = '';
+
+                if (questions.length === 0) {
+                    historyList.innerHTML = '<div class="text-center text-gray-500 py-8 bg-white rounded-xl border border-dashed border-gray-200">No hay preguntas registradas aún. ¡Haz tu primera pregunta arriba!</div>';
+                    return;
+                }
+
+                questions.forEach(q => {
+                    const date = new Date(q.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const item = document.createElement('div');
+                    item.className = 'bg-white rounded-xl border border-gray-100 shadow-sm p-5 fade-in';
+                    item.innerHTML = `
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="font-semibold text-gray-900 flex-1 pr-4">${escapeHtml(q.question)}</h4>
+                            <span class="text-xs text-gray-400 whitespace-nowrap">${date}</span>
+                        </div>
+                        <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                <span class="text-xs font-bold text-blue-700 uppercase tracking-wide">Respuesta IA</span>
+                            </div>
+                            <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(q.answer)}</p>
+                        </div>
+                    `;
+                    historyList.appendChild(item);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.className = `fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 flex items-center gap-3 ${type === 'error' ? 'bg-red-600' : 'bg-gray-900'} text-white`;
+            
+            // Show
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-20', 'opacity-0');
+            });
+
+            // Hide after 3s
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Registro del Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado con éxito:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Error al registrar el Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
